@@ -14,7 +14,7 @@
         android:layout_height="match_parent"
         android:layout_centerHorizontal="false"
         android:gravity="center_vertical"
-        android:textSize="40dp"
+        android:textSize="30dp"
         android:text="0"
         android:textColor="@android:color/holo_blue_dark"
         android:background="@android:color/black" />
