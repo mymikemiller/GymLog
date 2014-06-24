@@ -145,7 +145,7 @@ public class MainActivity extends FragmentActivity {
                 return mEpisodeFragment;
             }*/
 
-            if (pos > activities.length) pos = activities.length;
+            if (pos >= activities.length) pos = activities.length - 1;
 
             return ActivityFragment.newInstance(activities[pos]);
         }
