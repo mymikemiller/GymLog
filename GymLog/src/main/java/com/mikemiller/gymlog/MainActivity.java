@@ -152,7 +152,7 @@ public class MainActivity extends FragmentActivity {
 
         @Override
         public int getCount() {
-            return getActivitiesForToday().length + 1;
+            return getActivitiesForToday().length;
         }
     }
 }
