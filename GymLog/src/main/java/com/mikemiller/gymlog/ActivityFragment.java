@@ -4,6 +4,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
@@ -13,16 +14,48 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 public class ActivityFragment extends Fragment {
 
+    private class ActivityStats {
+        public ActivityStats(int weight, int reps) {
+            this.weight = weight;
+            this.reps = reps;
+        }
+        public ActivityStats(String val) {
+            int xLocation = val.indexOf('x');
+            this.weight = Integer.valueOf(val.substring(0, xLocation));
+            this.reps = Integer.valueOf(val.substring(xLocation + 1));
+        }
+
+        @Override
+        public String toString() {
+            return weight + "x" + reps;
+        }
+
+        public int weight;
+        public int reps;
+    }
+
     private Activity mActivity;
-    private int mWeight = 0;
-    private int mReps = 0;
-    private int mLastWeight = 0;
-    private int mLastReps = 0;
+    private Map<String, String> mStats = new HashMap<String, String>();
+    // Key: the date in millis (as a string so it can be stored with properties.putAll)
+    // Value: ActivityStats (as a string so it can be stored with properties.putAll)
+
+    private Button mSummaryButton;
+
+//    private int mWeight = 0;
+//    private int mReps = 0;
+//    private int mLastWeight = 0;
+//    private int mLastReps = 0;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -32,13 +65,14 @@ public class ActivityFragment extends Fragment {
         mActivity = (Activity) getArguments().getSerializable("activity");
         name.setText(mActivity.getName());
 
-        Button summary = (Button) view.findViewById(R.id.summary);
-        if (savedInstanceState!= null && savedInstanceState.containsKey("count")) {
-            mWeight = savedInstanceState.getInt("count");
-        }
+        mSummaryButton = (Button) view.findViewById(R.id.summary);
 
-        summary.setText(Integer.toString(mWeight));
-        summary.setOnTouchListener(new View.OnTouchListener() {
+//        if (savedInstanceState!= null && savedInstanceState.containsKey("count")) {
+//            mStats.put(Util.getMostRecentMonday(), savedInstanceState.getInt("count"));
+//        }
+
+        //summary.setText(Integer.toString(mWeight));
+        mSummaryButton.setOnTouchListener(new View.OnTouchListener() {
             GestureDetector doubleTapDetector = new GestureDetector(new DoubleTapDetector(getActivity()));
             GestureDetector flingAndLongPressDetector = new GestureDetector(getActivity(), new GestureDetector.OnGestureListener() {
                 @Override
@@ -103,17 +137,22 @@ public class ActivityFragment extends Fragment {
             }
         });*/
 
+        loadFromFile();
+        refreshButton();
+
         return view;
     }
+
+
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putInt("weight", mWeight);
-        outState.putInt("reps", mReps);
+//        outState.putInt("weight", mWeight);
+//        outState.putInt("reps", mReps);
     }
-
+/*
     @Override
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
@@ -126,40 +165,72 @@ public class ActivityFragment extends Fragment {
         }
     }
 
-    private void setWeight(int weight) {
-        mWeight = weight;
+*/
+    private ActivityStats getActivityStats(Calendar date) {
+        Calendar mostRecentMonday = Util.getMostRecentMondayFrom(date.getTimeInMillis());
+        String key = String.valueOf(mostRecentMonday.getTimeInMillis());
+        if (mStats.containsKey(key)) {
+            return new ActivityStats(mStats.get(key));
+        } else {
+            return new ActivityStats(0, 0);
+        }
+    }
+    private ActivityStats getActivityStats() {
+        Calendar c = Calendar.getInstance();
+        return getActivityStats(c);
+    }
+    private ActivityStats getLastActivityStats() {
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.DAY_OF_MONTH, -7); // subtract a week
+        return getActivityStats(c);
+    }
+    private void setActivityStats(ActivityStats stats) {
+        mStats.put(String.valueOf(Util.getMostRecentMonday().getTimeInMillis()), stats.toString());
         refreshButton();
+    }
+    private int getWeight() {
+        return getActivityStats().weight;
+    }
+    private int getReps() {
+        return getActivityStats().reps;
+    }
+    private int getLastWeight() {
+        return getLastActivityStats().weight;
+    }
+    private int getLastReps() {
+        return getLastActivityStats().reps;
+    }
+    private void setWeight(int weight) {
+        ActivityStats stats = getActivityStats();
+        stats.weight = weight;
+        setActivityStats(stats);
+        saveToFile();
     }
     private void setReps(int reps) {
-        mReps = reps;
-        refreshButton();
-    }
-    private void setLastWeight(int weight) {
-        mLastWeight = weight;
-        refreshButton();
-    }
-    private void setLastReps(int reps) {
-        mLastReps = reps;
-        refreshButton();
+        ActivityStats stats = getActivityStats();
+        stats.reps = reps;
+        setActivityStats(stats);
+        saveToFile();
     }
 
     private void refreshButton() {
-        Button summaryButton = (Button) getView().findViewById(R.id.summary);
-        summaryButton.setText(mActivity.getSummary(mWeight, mReps, mLastWeight, mLastReps));
+        int weight = getWeight() == 0 ? getLastWeight() : getWeight();
+        int reps = getReps() == 0 ? getLastReps() : getReps();
+        mSummaryButton.setText(mActivity.getSummary(weight, reps, getLastWeight(), getLastReps()));
     }
 
 
     public void incrementWeight() {
-        setWeight(mWeight + 5);
+        setWeight(getWeight() + 5);
     }
     public void decrementWeight() {
-        setWeight(mWeight - 5);
+        setWeight(getWeight() - 5);
     }
     public void incrementReps() {
-        setReps(mReps + 1);
+        setReps(getReps() + 1);
     }
     public void decrementReps() {
-        setReps(mReps - 1);
+        setReps(getReps() - 1);
     }
 
     public static ActivityFragment newInstance(Activity activity) {
@@ -175,20 +246,22 @@ public class ActivityFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
-        saveData();
+        //saveData();
     }
 
-    private void saveData() {
-        SharedPreferences.Editor outState = getActivity().getSharedPreferences(mActivity.getSharedPreferencesName(), Context.MODE_APPEND).edit();
-        outState.putInt("weight", mWeight);
-        outState.putInt("reps", mReps);
-        outState.putLong("dateSaved", Calendar.getInstance().getTimeInMillis());
-        outState.commit();
-    }
+    //private void saveData() {
+    //    saveToFile();
+//        SharedPreferences.Editor outState = getActivity().getSharedPreferences(mActivity.getSharedPreferencesName(), Context.MODE_APPEND).edit();
+//        outState.putInt("weight", mWeight);
+//        outState.putInt("reps", mReps);
+//        outState.putLong("dateSaved", Calendar.getInstance().getTimeInMillis());
+//        outState.commit();
+    //}
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+        /*
         SharedPreferences activity_data = getActivity().getSharedPreferences(mActivity.getSharedPreferencesName(), Context.MODE_APPEND);
         setWeight(activity_data.getInt("weight", 0));
         setReps(activity_data.getInt("reps", 0));
@@ -204,6 +277,42 @@ public class ActivityFragment extends Fragment {
                 setLastReps(mReps);
             }
         }
+*/
+    }
 
+    public File getSaveFile() {
+        // External storage is not always available (i.e. when mounting via adb). Consider using a different medium for saving.
+        File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "GymLog"+ File.separator);
+        // have the object build the directory structure, if needed.
+        dir.mkdirs();
+        // create a File object for the output file
+        File file = new File(dir, "Activity (" + mActivity.getName() + ").txt");
+        return file;
+    }
+
+    private void saveToFile() {
+        Properties properties = new Properties();
+//        properties.setProperty("dateSaved", String.valueOf(Calendar.getInstance().getTimeInMillis()));
+//        properties.setProperty("weight", String.valueOf(getWeight()));
+//        properties.setProperty("reps", String.valueOf(getReps()));
+        properties.putAll(mStats);
+
+        try {
+            FileOutputStream os = new FileOutputStream(getSaveFile());
+            properties.store(os, null);
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadFromFile() {
+        Properties properties = new Properties();
+        try {
+            properties.load(new FileInputStream(getSaveFile()));
+            this.mStats = new HashMap(properties);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

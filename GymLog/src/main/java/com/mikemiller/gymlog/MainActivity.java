@@ -65,8 +65,8 @@ public class MainActivity extends FragmentActivity {
 
         mEpisodeFragment = SimpleCounterFragment.newInstance("Whose Line");
 
-        String summary = getWeekSummary();
-        Log.d("Summary", summary);
+        //String summary = getWeekSummary();
+        //Log.d("Summary", summary);
     }
 
     // 1 = Sunday
@@ -105,10 +105,7 @@ public class MainActivity extends FragmentActivity {
         Activity mondayActivity = mDaysOfWeekToActivity.get(mMonday)[0];
         SharedPreferences activity_data = getSharedPreferences(mondayActivity.getSharedPreferencesName(), Context.MODE_APPEND);
         long dateSavedMillis = activity_data.getLong("dateSaved", 0);
-
-        Calendar c = Calendar.getInstance();
-        c.setTimeInMillis(dateSavedMillis);
-        c.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY); // Move the date to the previous Monday
+        Calendar c = Util.getMostRecentMondayFrom(dateSavedMillis);
         //System.out.println("Date " + c.getTime());
 
         SimpleDateFormat simpleDate =  new SimpleDateFormat("MM/dd/yyyy");
