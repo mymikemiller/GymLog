@@ -65,7 +65,7 @@ public class MainActivity extends FragmentActivity {
 
         mEpisodeFragment = SimpleCounterFragment.newInstance("Whose Line");
 
-        //String summary = getWeekSummary();
+        String summary = getWeekSummary();
         //Log.d("Summary", summary);
     }
 
@@ -103,21 +103,22 @@ public class MainActivity extends FragmentActivity {
 
 
         Activity mondayActivity = mDaysOfWeekToActivity.get(mMonday)[0];
-        SharedPreferences activity_data = getSharedPreferences(mondayActivity.getSharedPreferencesName(), Context.MODE_APPEND);
-        long dateSavedMillis = activity_data.getLong("dateSaved", 0);
-        Calendar c = Util.getMostRecentMondayFrom(dateSavedMillis);
+        ActivityFragment mondayActivityFragment = ActivityFragment.newInstance(mondayActivity);
+
+        //long dateSavedMillis = mondayActivity.getDateSaved();
+        Calendar c = Util.getMostRecentMondayFrom(Calendar.getInstance().getTimeInMillis());
         //System.out.println("Date " + c.getTime());
 
         SimpleDateFormat simpleDate =  new SimpleDateFormat("MM/dd/yyyy");
         String mondayDateString = simpleDate.format(c.getTime());
 
-
         String summary = mondayDateString + "\t";
 
         for(Activity activity : allActivities) {
-            activity_data = getSharedPreferences(activity.getSharedPreferencesName(), Context.MODE_APPEND);
-            int weight = activity_data.getInt("weight", 0);
-            int reps = activity_data.getInt("reps", 0);
+            ActivityFragment activityFragment = ActivityFragment.newInstance(activity);
+
+            int weight = activityFragment.getWeight();
+            int reps = activityFragment.getReps();
 
             summary += weight + "x";
             summary += reps + "\t";

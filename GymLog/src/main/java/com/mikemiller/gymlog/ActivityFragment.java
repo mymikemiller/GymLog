@@ -188,10 +188,10 @@ public class ActivityFragment extends Fragment {
         mStats.put(String.valueOf(Util.getMostRecentMonday().getTimeInMillis()), stats.toString());
         refreshButton();
     }
-    private int getWeight() {
+    public int getWeight() {
         return getActivityStats().weight;
     }
-    private int getReps() {
+    public int getReps() {
         return getActivityStats().reps;
     }
     private int getLastWeight() {
@@ -239,6 +239,9 @@ public class ActivityFragment extends Fragment {
         Bundle b = new Bundle();
         b.putSerializable("activity", activity);
         f.setArguments(b);
+
+        f.mActivity = activity;
+        f.loadFromFile();
 
         return f;
     }
