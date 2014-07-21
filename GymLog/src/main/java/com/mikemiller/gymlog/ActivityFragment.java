@@ -192,9 +192,17 @@ public class ActivityFragment extends Fragment {
         refreshButton();
     }
     public int getWeight() {
+        if (getActivityStats().weight == 0) {
+            return getLastWeight();
+        }
+
         return getActivityStats().weight;
     }
     public int getReps() {
+        if (getActivityStats().reps == 0) {
+            return getLastReps();
+        }
+
         return getActivityStats().reps;
     }
     private int getLastWeight() {
@@ -222,10 +230,15 @@ public class ActivityFragment extends Fragment {
         getActivity().sendBroadcast(new Intent(STAT_UPDATED));
     }
 
+    private boolean refreshingButton = false;
     private void refreshButton() {
-        int weight = getWeight() == 0 ? getLastWeight() : getWeight();
-        int reps = getReps() == 0 ? getLastReps() : getReps();
-        mSummaryButton.setText(mActivity.getSummary(weight, reps, getLastWeight(), getLastReps()));
+        if (!refreshingButton && mSummaryButton != null) {
+            refreshingButton = true;
+            int weight = getWeight();
+            int reps = getReps();
+            mSummaryButton.setText(mActivity.getSummary(weight, reps, getLastWeight(), getLastReps()));
+            refreshingButton = false;
+        }
     }
 
 
