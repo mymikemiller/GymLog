@@ -2,6 +2,7 @@ package com.mikemiller.gymlog;
 
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
@@ -24,6 +25,8 @@ import java.util.Map;
 import java.util.Properties;
 
 public class ActivityFragment extends Fragment {
+
+    public static String STAT_UPDATED = "STAT_UPDATED";
 
     private class ActivityStats {
         public ActivityStats(int weight, int reps) {
@@ -205,12 +208,18 @@ public class ActivityFragment extends Fragment {
         stats.weight = weight;
         setActivityStats(stats);
         saveToFile();
+
+        // Update the weekly log file
+        getActivity().sendBroadcast(new Intent(STAT_UPDATED));
     }
     private void setReps(int reps) {
         ActivityStats stats = getActivityStats();
         stats.reps = reps;
         setActivityStats(stats);
         saveToFile();
+
+        // Update the weekly log file
+        getActivity().sendBroadcast(new Intent(STAT_UPDATED));
     }
 
     private void refreshButton() {

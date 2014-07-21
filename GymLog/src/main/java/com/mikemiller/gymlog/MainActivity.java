@@ -2,14 +2,24 @@ package com.mikemiller.gymlog;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +28,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class MainActivity extends FragmentActivity {
 
@@ -55,6 +66,8 @@ public class MainActivity extends FragmentActivity {
                 new Activity("Weighted Ab Cable Crunches", 1, 10, 20, 0, 0)});
     }};
 
+    private IntentReceiver mIntentReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,7 +76,11 @@ public class MainActivity extends FragmentActivity {
         ViewPager pager = (ViewPager) findViewById(R.id.viewPager);
         pager.setAdapter(new MyPagerAdapter(getFragmentManager()));
 
-        mEpisodeFragment = SimpleCounterFragment.newInstance("Whose Line");
+        //mEpisodeFragment = SimpleCounterFragment.newInstance("Whose Line");
+
+        if (mIntentReceiver == null) mIntentReceiver = new IntentReceiver();
+        IntentFilter intentFilter = new IntentFilter(ActivityFragment.STAT_UPDATED);
+        registerReceiver(mIntentReceiver, intentFilter);
 
         String summary = getWeekSummary();
         //Log.d("Summary", summary);
@@ -151,6 +168,90 @@ public class MainActivity extends FragmentActivity {
         @Override
         public int getCount() {
             return getActivitiesForToday().length;
+        }
+    }
+
+    private class IntentReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(ActivityFragment.STAT_UPDATED)) {
+                String summary = getWeekSummary();
+
+                ArrayList<String> allWeeks = getAllWeeklySummariesFromFile();
+
+                allWeeks = replaceOrAddWeek(allWeeks, summary);
+                saveAllWeeklySummariesToFile(allWeeks);
+
+                Log.d("", "");
+            }
+        }
+    }
+
+    private ArrayList<String> replaceOrAddWeek(ArrayList<String> allWeeks, String replacement) {
+        String date = replacement.substring(0, replacement.indexOf('\t'));
+        boolean replaced = false;
+        for(int i = 0; i < allWeeks.size() - 1; i++) {
+            String entry = allWeeks.get(i);
+            if (entry.startsWith(date)) {
+                // We found a previous entry for this week. Update it.
+                allWeeks.remove(i);
+                allWeeks.add(i, replacement);
+                replaced = true;
+            }
+        }
+
+        if (!replaced) {
+            allWeeks.add(replacement);
+        }
+        return allWeeks;
+    }
+
+    public File getSaveFile() {
+        // External storage is not always available (i.e. when mounting via adb). Consider using a different medium for saving.
+        File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "GymLog"+ File.separator);
+        // have the object build the directory structure, if needed.
+        dir.mkdirs();
+        // create a File object for the output file
+        File file = new File(dir, "WeeklyLog.txt");
+        return file;
+    }
+
+    private ArrayList<String> getAllWeeklySummariesFromFile() {
+
+        ArrayList<String> allLines = new ArrayList<String>();
+
+        try {
+            FileInputStream fi = new FileInputStream(getSaveFile());
+            InputStreamReader inputreader = new InputStreamReader(fi);
+            BufferedReader buffreader = new BufferedReader(inputreader);
+
+            for (String line = buffreader.readLine(); line != null; line = buffreader.readLine()) {
+                allLines.add(line);
+            }
+
+            fi.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return allLines;
+    }
+
+    private void saveAllWeeklySummariesToFile(ArrayList<String> allWeeks) {
+        try {
+            FileOutputStream os = new FileOutputStream(getSaveFile(), false);
+
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(os);
+            outputStreamWriter.flush();
+            for(String line : allWeeks) {
+                outputStreamWriter.write(line);
+                outputStreamWriter.write("\r\n");
+            }
+            outputStreamWriter.close();
+
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
