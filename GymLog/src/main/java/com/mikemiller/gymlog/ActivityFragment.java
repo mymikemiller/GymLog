@@ -4,6 +4,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -175,7 +176,7 @@ public class ActivityFragment extends Fragment {
         if (mStats.containsKey(key)) {
             return new ActivityStats(mStats.get(key));
         } else {
-            return new ActivityStats(0, 0);
+            return new ActivityStats(-5, -5);
         }
     }
     private ActivityStats getActivityStats() {
@@ -184,22 +185,26 @@ public class ActivityFragment extends Fragment {
     }
     private ActivityStats getLastActivityStats() {
         Calendar c = Calendar.getInstance();
-        c.add(Calendar.DAY_OF_MONTH, -7); // subtract a week
-        return getActivityStats(c);
+        ActivityStats lastActivityStats = new ActivityStats(-5, -5);
+        while(lastActivityStats.reps < 0 || lastActivityStats.weight < 0) {
+            c.add(Calendar.DAY_OF_MONTH, -7); // subtract a week
+            lastActivityStats = getActivityStats(c);
+        }
+        return lastActivityStats;
     }
     private void setActivityStats(ActivityStats stats) {
         mStats.put(String.valueOf(Util.getMostRecentMonday().getTimeInMillis()), stats.toString());
         refreshButton();
     }
     public int getWeight() {
-        if (getActivityStats().weight == 0) {
+        if (getActivityStats().weight == -5) {
             return getLastWeight();
         }
 
         return getActivityStats().weight;
     }
     public int getReps() {
-        if (getActivityStats().reps == 0) {
+        if (getActivityStats().reps == -5) {
             return getLastReps();
         }
 
@@ -321,6 +326,16 @@ public class ActivityFragment extends Fragment {
 //        properties.setProperty("weight", String.valueOf(getWeight()));
 //        properties.setProperty("reps", String.valueOf(getReps()));
         properties.putAll(mStats);
+
+        if (getWeight() == 0 || getReps() == 0) {
+            Log.d("writing", "0");
+            mSummaryButton.setTextColor(Color.RED);
+        } else if (getWeight() == -5 || getReps() == -5) {
+            Log.d("writing", "-5");
+            mSummaryButton.setTextColor(Color.MAGENTA);
+        } else {
+            mSummaryButton.setTextColor(getResources().getColor(android.R.color.holo_blue_dark));
+        }
 
         try {
             FileOutputStream os = new FileOutputStream(getSaveFile());

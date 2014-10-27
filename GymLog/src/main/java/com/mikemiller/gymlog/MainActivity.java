@@ -55,6 +55,7 @@ public class MainActivity extends FragmentActivity {
                 new Activity("Pendlay Rows", 2, 4, 6, 10, 1),
                 new Activity("Assisted Chin-ups", 3, 4, 6, 10, 1) });
         put(mWednesday, new Activity[]{
+                new Activity("Treadmill", 1, 0, 20, 10, 1),
                 new Activity("Flat Barbell Bench Press", 3, 6, 10, 10, 1),
                 new Activity("Incline Barbell Bench Press", 2, 8, 12, 10, 1),
                 new Activity("Barbell Curls", 3, 0, 8, 0, 0)});
